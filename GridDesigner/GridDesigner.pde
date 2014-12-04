@@ -77,7 +77,7 @@ void setup() {
    ;
    
   uidotSize = cp5.addSlider("dot_size")
-   .setValue(dotSize)
+   .setValue(squareSize)
    .setRange(0,300)
    .setPosition(px,270)
    .setSize(200,20)
