@@ -11,7 +11,7 @@ final int ALGO_JOINT_LINE = 1;
 final int LAYER_A = 0;
 final int LAYER_B = 1;
 
-int pixelSize = 40;
+int squareSize = 40;
 int canvas[][][];
 int frameCanvas[][][];
 int selectLayer = 0;
@@ -19,21 +19,24 @@ int displayPixels = 16;
 int layerNum = 2;
 int selectColor = 1;
 int selectAlgorithm = 0;
-int particleSize = 40;
+int dotSize = 40;
 int editMode = 0;
+
+int gridLineWidth = 1;
+color gridLineColor = color(192, 192, 192, 128);
 
 class LayerInfo {
   
   int posX = 0;
   int posY = 0;
-  int pixelSize = 40;
+  int squareSize = 40;
   int canvas[][][];
   int selectLayer = 0;
   int displayPixels = 16;
   int layerNum = 3;
   int selectColor = 1;
-  int selectAlgorithm = 0;
-  int particleSize = 40;
+  int algorithm = 0;
+  int dotSize = 40;
   int editMode = 0;
   
 }
@@ -43,7 +46,7 @@ LayerInfo layerInfo[];
 Button uiShowAllLayer;
 Button uiSelectLayerA;
 Button uiSelectLayerB;
-Slider uiParticleSize;
+Slider uidotSize;
 Slider uiPosX;
 Slider uiPosY;
 Slider uiAlgorithm;
@@ -63,8 +66,6 @@ void setup() {
   layerInfo = new LayerInfo[2];
   layerInfo[0] = new LayerInfo();
   layerInfo[1] = new LayerInfo();
-  layerInfo[1].posX = 20;
-  layerInfo[1].posY = 20;
   
   // UI
   int px = 680;
@@ -85,34 +86,36 @@ void setup() {
    .setSize(200,40)
    ;
    
-  uiParticleSize = cp5.addSlider("particle_size")
-   .setValue(particleSize)
+  uidotSize = cp5.addSlider("dot_size")
+   .setValue(dotSize)
    .setRange(0,300)
    .setPosition(px,270)
    .setSize(200,20)
    ;
   uiPosX = cp5.addSlider("pos_x")
    .setValue(0)
-   .setRange(0,pixelSize)
+   .setRange(0,squareSize)
    .setPosition(px,300)
    .setSize(200,20)
    ;
   
   uiPosY = cp5.addSlider("pos_y")
    .setValue(0)
-   .setRange(0,pixelSize)
+   .setRange(0,squareSize)
    .setPosition(px,330)
    .setSize(200,20)
    ;
 
   uiAlgorithm = cp5.addSlider("algorithm")
    .setValue(0)
-   .setRange(0, 1)
+   .setRange(0, 2)
    .setPosition(px,360)
    .setSize(200,20)
    ;
   
   selectLayer = 0;
+  layerInfo[1].posX = 20;
+  layerInfo[1].posY = 20;
 }
 
 
@@ -144,10 +147,10 @@ void draw() {
     
     if (mouseButton == LEFT) {
       
-      if (mouseX < (displayPixels * pixelSize)) {
+      if (mouseX < (displayPixels * squareSize)) {
         
-        int tx = (mouseX - layer.posX) / pixelSize;
-        int ty = (mouseY - layer.posY) / pixelSize;
+        int tx = (mouseX - layer.posX) / squareSize;
+        int ty = (mouseY - layer.posY) / squareSize;
         
         canvas[selectLayer][ty][tx] = selectColor;
       } else {
@@ -185,100 +188,149 @@ void draw() {
   }
 
   // draw to canvas by select algorithm
-  if (selectAlgorithm == ALGO_ELLIPSE_DOT) {
+  for(int i=0; i < layerNum; i++) {
+    if (layerInfo[i].algorithm == ALGO_ELLIPSE_DOT) {
+    
+      _drawEllipseDot(i);
   
-    _drawEllipseDot();
-
-  } else if (selectAlgorithm == ALGO_JOINT_LINE) {
-    
-    _drawJointLine();
-    
+    } else if (layerInfo[i].algorithm == ALGO_JOINT_LINE) {
+      
+      _drawJointLine(i);
+      
+    }
   }
   
-  stroke(192, 192, 192, 128);
-  drawGrid(layer.posX, layer.posY, displayPixels*pixelSize, displayPixels*pixelSize, displayPixels, displayPixels);
+  stroke(gridLineColor);
+  strokeWeight(gridLineWidth);
+  drawGrid(layer.posX, layer.posY, displayPixels*squareSize, displayPixels*squareSize, displayPixels, displayPixels);
   
 }
 
 
-void _drawEllipseDot() {
+void _drawEllipseDot(int layerId) {
   
+  LayerInfo l = layerInfo[layerId];
+
   noStroke();
-  
-  for(int h=0; h < layerNum; h++) {
+
+  for(int i=1; i<displayPixels+1; i++) {
+
+    int y = i - 1;
     
-    LayerInfo l = layerInfo[h];
+    for(int j=1; j<displayPixels+1; j++) {
 
-    for(int i=1; i<displayPixels+1; i++) {
-
-      int y = i - 1;
+      int x = j - 1;
       
-      for(int j=1; j<displayPixels+1; j++) {
-
-        int x = j - 1;
+      if (frameCanvas[layerId][i][j] != 0) {
         
-        if (frameCanvas[h][i][j] != 0) {
-          
-          if (editMode == 1) {
+        if (editMode == 1) {
 
-            int alpha = 255;
-            if (h != selectLayer) {
-              alpha = 127;
-            }
-            
-            fill(255, 255, 255,alpha);
-
-          } else {
-          
-            fill(255, 255, 255);
-          
+          int alpha = 255;
+          if (layerId != selectLayer) {
+            alpha = 127;
           }
+          
+          fill(255, 255, 255,alpha);
+
+        } else {
         
-          if (h == 0) {
-            ellipse((x+0.5)*pixelSize + l.posX, (y+0.5)*pixelSize + l.posY, l.particleSize, l.particleSize);
-          } else {
-            ellipse((x+1)*pixelSize + l.posX, (y+1)*pixelSize + l.posY, l.particleSize, l.particleSize);
-          }
+          fill(255, 255, 255);
+        
         }
-      }
+      
+        ellipse((x+0.5)*squareSize + l.posX, (y+0.5)*squareSize + l.posY, l.dotSize, l.dotSize);
 
+      }
     }
+
   }
   
 }
 
 
-void _drawJointLine() {
+void _drawJointLine(int layerId) {
   
-  stroke(255, 255, 255);
+  LayerInfo l = layerInfo[layerId];
   
-  for(int i=0; i<displayPixels; i++) {
+  
+  for(int i=1; i<displayPixels+1; i++) {
 
-    for(int j=0; j<displayPixels; j++) {
-      
-      if (frameCanvas[0][i][j] != 0) {
-
-        if (frameCanvas[1][i+1][j+1] != 0) {
-          
-          line((j+0.5)*pixelSize, (i+0.5)*pixelSize, (j+1.5)*pixelSize, (i+1.5)*pixelSize);
-          
-        } else {
-          
-            //ellipse((x+1)*pixelSize, (y+1)*pixelSize, 2, 2);
-          
-        }
-        /*
-        if (canvas[1][i][j] != 0) {
-          
-          line((j+0.5)*pixelSize, (i+0.5)*pixelSize, (j+1)*pixelSize, (i+1)*pixelSize);
-          
-        }*/
-        
-      }
-      
-    }
+    int y = i - 1;
     
+    for(int j=1; j<displayPixels+1; j++) {
+
+      int x = j - 1;
+      
+      if (frameCanvas[layerId][i][j] != 0) {
+        
+        color c;
+        
+        if (editMode == 1) {
+
+          int alpha = 255;
+          if (layerId != selectLayer) {
+            alpha = 127;
+          }
+          
+          c = color(255, 255, 255,alpha);
+
+        } else {
+        
+          c = color(255, 255, 255);
+        
+        }
+        
+        boolean drawFlag = false;
+        if (frameCanvas[layerId][i-1][j-1] != 0) {
+
+          noFill();
+          stroke(c);
+          strokeWeight(l.dotSize);
+          line((x+0.5)*squareSize + l.posX, (y+0.5)*squareSize + l.posY, (x-1+0.5)*squareSize + l.posX, (y-1+0.5)*squareSize + l.posY);
+
+          drawFlag = true;
+        }
+        if (frameCanvas[layerId][i-1][j+1] != 0) {
+
+          noFill();
+          stroke(c);
+          strokeWeight(l.dotSize);
+          line((x+0.5)*squareSize + l.posX, (y+0.5)*squareSize + l.posY, (x+1+0.5)*squareSize + l.posX, (y-1+0.5)*squareSize + l.posY);
+
+          drawFlag = true;
+        }
+        if (frameCanvas[layerId][i+1][j-1] != 0) {
+
+          noFill();
+          stroke(c);
+          strokeWeight(l.dotSize);
+          line((x+0.5)*squareSize + l.posX, (y+0.5)*squareSize + l.posY, (x-1+0.5)*squareSize + l.posX, (y+1+0.5)*squareSize + l.posY);
+
+          drawFlag = true;
+        }
+        if (frameCanvas[layerId][i+1][j+1] != 0) {
+
+          noFill();
+          stroke(c);
+          strokeWeight(l.dotSize);
+          line((x+0.5)*squareSize + l.posX, (y+0.5)*squareSize + l.posY, (x+1+0.5)*squareSize + l.posX, (y+1+0.5)*squareSize + l.posY);
+
+          drawFlag = true;
+        }
+        
+        if (drawFlag == false) {
+
+          noStroke();
+          fill(c);
+          ellipse((x+0.5)*squareSize + l.posX, (y+0.5)*squareSize + l.posY, 3, 3);
+
+        }
+
+      }
+    }
+
   }
+  
  
 }
 
@@ -311,20 +363,20 @@ void mousePressed() {
   
   if (mouseButton == RIGHT) {
 
-    if (mouseX < (displayPixels * pixelSize)) {
+    if (mouseX < (displayPixels * squareSize)) {
 
       int tx, ty;
 
       if (selectLayer == LAYER_A) {
       
-        tx = mouseX / pixelSize;
-        ty = mouseY / pixelSize;
+        tx = mouseX / squareSize;
+        ty = mouseY / squareSize;
         selectColor = canvas[selectLayer][ty][tx];
         
       } else {
 
-        tx = (mouseX - (pixelSize/2)) / pixelSize;
-        ty = (mouseY - (pixelSize/2)) / pixelSize;
+        tx = (mouseX - (squareSize/2)) / squareSize;
+        ty = (mouseY - (squareSize/2)) / squareSize;
 
       }
 
@@ -340,7 +392,6 @@ void mousePressed() {
 void mouseReleased() {
 
 }
-
 
 
 void controlEvent(ControlEvent theEvent) {
@@ -365,26 +416,34 @@ void controlEvent(ControlEvent theEvent) {
 
     editMode = 0;
 
-  } else if (name == "particle_size") {
-    layer.particleSize = (int)theEvent.getController().getValue();
+  } else if (name == "dot_size") {
+    
+    layer.dotSize = (int)theEvent.getController().getValue();
     
   } else if (name == "pos_x") {
+
     layer.posX = (int)theEvent.getController().getValue();
     
   } else if (name == "pos_y") {
+
     layer.posY = (int)theEvent.getController().getValue();
+    
+  } else if (name == "algorithm") {
+
+    layer.algorithm = (int)theEvent.getController().getValue();
     
   }
 
 }
 
+
 void _updateGuiByLayerInfo() {
   
   LayerInfo l = layerInfo[selectLayer];
   
-  uiParticleSize.setValue( l.particleSize );
+  uidotSize.setValue( l.dotSize );
   uiPosX.setValue( l.posX );
   uiPosY.setValue( l.posY );
-  
+  uiAlgorithm.setValue( l.algorithm );
   
 }
