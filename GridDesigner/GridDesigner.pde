@@ -18,10 +18,7 @@ int selectLayer = 0;
 int displayPixels = 16;
 int layerNum = 2;
 int selectColor = 1;
-int selectAlgorithm = 0;
-int dotSize = 40;
 int editMode = 0;
-
 int gridLineWidth = 1;
 color gridLineColor = color(192, 192, 192, 128);
 
@@ -29,15 +26,9 @@ class LayerInfo {
   
   int posX = 0;
   int posY = 0;
-  int squareSize = 40;
-  int canvas[][][];
-  int selectLayer = 0;
-  int displayPixels = 16;
-  int layerNum = 3;
   int selectColor = 1;
   int algorithm = 0;
   int dotSize = 40;
-  int editMode = 0;
   
 }
 
@@ -51,12 +42,11 @@ Slider uiPosX;
 Slider uiPosY;
 Slider uiAlgorithm;
 
+
 void setup() {
 
   size(960, 640);
   ellipseMode(CENTER);
-  
-  
   
   cp5 = new ControlP5(this);
 
@@ -122,6 +112,7 @@ void setup() {
 void update() {
 }
 
+
 void draw() {
   
   background(0);
@@ -131,10 +122,10 @@ void draw() {
   rect(640, 480, 320, 160);
   fill(255,255,255);
   rect(640+20, 480+20, 120, 120);
+  
   noFill();
   stroke(0,0,0,64);
   rect(640+180, 480+20, 120, 120);
-  
   stroke(255,64,64,192);
   strokeWeight(5);
   rect(640 + 10 + (160 * (selectColor^1)), 480+10, 140, 140);  
