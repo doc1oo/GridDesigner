@@ -16,34 +16,103 @@ int canvas[][][];
 int frameCanvas[][][];
 int selectLayer = 0;
 int displayPixels = 16;
-int layerNum = 3;
-int selColor = 1;
+int layerNum = 2;
+int selectColor = 1;
 int selectAlgorithm = 0;
+int particleSize = 40;
+int editMode = 0;
 
+class LayerInfo {
+  
+  int posX = 0;
+  int posY = 0;
+  int pixelSize = 40;
+  int canvas[][][];
+  int selectLayer = 0;
+  int displayPixels = 16;
+  int layerNum = 3;
+  int selectColor = 1;
+  int selectAlgorithm = 0;
+  int particleSize = 40;
+  int editMode = 0;
+  
+}
+
+LayerInfo layerInfo[];
+
+Button uiShowAllLayer;
+Button uiSelectLayerA;
+Button uiSelectLayerB;
+Slider uiParticleSize;
+Slider uiPosX;
+Slider uiPosY;
+Slider uiAlgorithm;
 
 void setup() {
 
   size(960, 640);
   ellipseMode(CENTER);
   
+  
+  
   cp5 = new ControlP5(this);
 
   canvas = new int[layerNum][displayPixels][displayPixels];
   frameCanvas = new int[layerNum][displayPixels+2][displayPixels+2];
   
+  layerInfo = new LayerInfo[2];
+  layerInfo[0] = new LayerInfo();
+  layerInfo[1] = new LayerInfo();
+  layerInfo[1].posX = 20;
+  layerInfo[1].posY = 20;
+  
   // UI
-  cp5.addButton("select_Layer_A")
+  int px = 680;
+  uiShowAllLayer = cp5.addButton("show_all_layer")
    .setValue(0)
-   .setPosition(700,100)
+   .setPosition(px,50)
+   .setSize(200,40)
+   ;
+  uiSelectLayerA = cp5.addButton("select_Layer_A")
+   .setValue(0)
+   .setPosition(px,100)
    .setSize(200,40)
    ;
    
-  cp5.addButton("select_Layer_B")
-   .setValue(100)
-   .setPosition(700,150)
+  uiSelectLayerB = cp5.addButton("select_Layer_B")
+   .setValue(0)
+   .setPosition(px,150)
    .setSize(200,40)
    ;
+   
+  uiParticleSize = cp5.addSlider("particle_size")
+   .setValue(particleSize)
+   .setRange(0,300)
+   .setPosition(px,270)
+   .setSize(200,20)
+   ;
+  uiPosX = cp5.addSlider("pos_x")
+   .setValue(0)
+   .setRange(0,pixelSize)
+   .setPosition(px,300)
+   .setSize(200,20)
+   ;
   
+  uiPosY = cp5.addSlider("pos_y")
+   .setValue(0)
+   .setRange(0,pixelSize)
+   .setPosition(px,330)
+   .setSize(200,20)
+   ;
+
+  uiAlgorithm = cp5.addSlider("algorithm")
+   .setValue(0)
+   .setRange(0, 1)
+   .setPosition(px,360)
+   .setSize(200,20)
+   ;
+  
+  selectLayer = 0;
 }
 
 
@@ -65,46 +134,50 @@ void draw() {
   
   stroke(255,64,64,192);
   strokeWeight(5);
-  rect(640 + 10 + (160 * (selColor^1)), 480+10, 140, 140);  
+  rect(640 + 10 + (160 * (selectColor^1)), 480+10, 140, 140);  
   strokeWeight(1);
+  
+  LayerInfo layer = layerInfo[selectLayer];
   
   // paint by mouse
   if (mousePressed == true) {
     
-    if (mouseX < (displayPixels * pixelSize)) {
+    if (mouseButton == LEFT) {
       
-      int tx = mouseX / pixelSize;
-      int ty = mouseY / pixelSize;
-      
-      canvas[selectLayer][ty][tx] = selColor;
-    } else {
-      
-      if (mouseY > 360) {
+      if (mouseX < (displayPixels * pixelSize)) {
         
-        if (mouseX < (640+160)) {
+        int tx = (mouseX - layer.posX) / pixelSize;
+        int ty = (mouseY - layer.posY) / pixelSize;
+        
+        canvas[selectLayer][ty][tx] = selectColor;
+      } else {
+        
+        if (mouseY > 480) {
           
-          selColor = 1;
-          
-        } else {
-          
-          selColor = 0;
+          if (mouseX < (640+160)) {
+            
+            selectColor = 1;
+            
+          } else {
+            
+            selectColor = 0;
+            
+          }
           
         }
-        
       }
-      
     }
   }
 
   // add frame to canvas array for image processing
-  for(int layer=0; layer < layerNum; layer++) {
+  for(int l=0; l < layerNum; l++) {
     for(int i=0; i<displayPixels+2; i++) {
       for(int j=0; j<displayPixels+2; j++) {
         
         if (i == 0 || j == 0 || i == (displayPixels+1) || j == (displayPixels+1)) {
-          frameCanvas[layer][i][j] = 0;
+          frameCanvas[l][i][j] = 0;
         } else {
-          frameCanvas[layer][i][j] = canvas[layer][i-1][j-1];
+          frameCanvas[l][i][j] = canvas[l][i-1][j-1];
         }
         
       }
@@ -123,7 +196,7 @@ void draw() {
   }
   
   stroke(192, 192, 192, 128);
-  drawGrid(selectLayer*pixelSize/2, selectLayer*pixelSize/2, displayPixels*pixelSize, displayPixels*pixelSize, displayPixels, displayPixels);
+  drawGrid(layer.posX, layer.posY, displayPixels*pixelSize, displayPixels*pixelSize, displayPixels, displayPixels);
   
 }
 
@@ -132,7 +205,9 @@ void _drawEllipseDot() {
   
   noStroke();
   
-  for(int layer=0; layer < layerNum; layer++) {
+  for(int h=0; h < layerNum; h++) {
+    
+    LayerInfo l = layerInfo[h];
 
     for(int i=1; i<displayPixels+1; i++) {
 
@@ -142,21 +217,29 @@ void _drawEllipseDot() {
 
         int x = j - 1;
         
-        if (frameCanvas[layer][i][j] != 0) {
-
-          int alpha = 255;
-          if (layer != selectLayer) {
-            alpha = 127;
-          }
+        if (frameCanvas[h][i][j] != 0) {
           
-          fill(255, 255, 255,alpha);
-          if (layer == 0) {
-            ellipse((x+0.5)*pixelSize, (y+0.5)*pixelSize, pixelSize, pixelSize);
+          if (editMode == 1) {
+
+            int alpha = 255;
+            if (h != selectLayer) {
+              alpha = 127;
+            }
+            
+            fill(255, 255, 255,alpha);
+
           } else {
-            ellipse((x+1)*pixelSize, (y+1)*pixelSize, pixelSize, pixelSize);
+          
+            fill(255, 255, 255);
+          
+          }
+        
+          if (h == 0) {
+            ellipse((x+0.5)*pixelSize + l.posX, (y+0.5)*pixelSize + l.posY, l.particleSize, l.particleSize);
+          } else {
+            ellipse((x+1)*pixelSize + l.posX, (y+1)*pixelSize + l.posY, l.particleSize, l.particleSize);
           }
         }
-
       }
 
     }
@@ -178,6 +261,10 @@ void _drawJointLine() {
         if (frameCanvas[1][i+1][j+1] != 0) {
           
           line((j+0.5)*pixelSize, (i+0.5)*pixelSize, (j+1.5)*pixelSize, (i+1.5)*pixelSize);
+          
+        } else {
+          
+            //ellipse((x+1)*pixelSize, (y+1)*pixelSize, 2, 2);
           
         }
         /*
@@ -232,7 +319,7 @@ void mousePressed() {
       
         tx = mouseX / pixelSize;
         ty = mouseY / pixelSize;
-        selColor = canvas[selectLayer][ty][tx];
+        selectColor = canvas[selectLayer][ty][tx];
         
       } else {
 
@@ -242,7 +329,7 @@ void mousePressed() {
       }
 
 
-      selColor = canvas[selectLayer][ty][tx];
+      selectColor = canvas[selectLayer][ty][tx];
       
     }
   }
@@ -256,19 +343,48 @@ void mouseReleased() {
 
 
 
-public void controlEvent(ControlEvent theEvent) {
-  
+void controlEvent(ControlEvent theEvent) {
+
   String name = theEvent.getController().getName();
+  
+  LayerInfo layer = layerInfo[selectLayer];
 
   if (name == "select_Layer_A") {
     
     selectLayer = LAYER_A;
+    editMode = 1;
+    _updateGuiByLayerInfo();
     
   } else if (name == "select_Layer_B") {
 
     selectLayer = LAYER_B;
+    editMode = 1;
+    _updateGuiByLayerInfo();
 
+  } else if (name == "show_all_layer") {
+
+    editMode = 0;
+
+  } else if (name == "particle_size") {
+    layer.particleSize = (int)theEvent.getController().getValue();
+    
+  } else if (name == "pos_x") {
+    layer.posX = (int)theEvent.getController().getValue();
+    
+  } else if (name == "pos_y") {
+    layer.posY = (int)theEvent.getController().getValue();
+    
   }
 
 }
 
+void _updateGuiByLayerInfo() {
+  
+  LayerInfo l = layerInfo[selectLayer];
+  
+  uiParticleSize.setValue( l.particleSize );
+  uiPosX.setValue( l.posX );
+  uiPosY.setValue( l.posY );
+  
+  
+}
